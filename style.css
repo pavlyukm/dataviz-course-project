@@ -7,7 +7,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background-color: #f0f0f0; /* Nice grayish background */
+    background-color: #323131;
 }
 
 #container {
@@ -18,10 +18,15 @@ body {
     max-width: 1200px;
 }
 
-#legend {
+#legend-container {
     margin-bottom: 20px;
     width: 100%;
     text-align: center;
+}
+
+#legend {
+    display: inline-block;
+    margin: 0 auto;
 }
 
 #chart {
@@ -46,6 +51,7 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     width: 100%;
+    display: block;
 }
 
 .treemap-text:hover {

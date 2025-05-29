@@ -69,7 +69,7 @@ d3.csv("data.csv").then(data => {
   const legendX = (width - legendWidth) / 2;
   const legendY = 10;
 
-  const legend = d3.select("#legend").append("svg")
+  const legend = d3.select("#legend")
     .attr("width", legendWidth)
     .attr("height", legendHeight)
     .append("g")
@@ -148,6 +148,7 @@ d3.csv("data.csv").then(data => {
   // Make the treemap zoomable without panning
   const zoom = d3.zoom()
     .scaleExtent([1, 8])
+    .translateExtent([[0, 0], [width, height]])
     .on("zoom", (event) => {
       treemapGroup.attr("transform", event.transform);
     });
