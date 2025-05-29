@@ -37,7 +37,7 @@ d3.csv("data.csv").then(data => {
 
   // Specify the chart’s dimensions
   const width = 1154;
-  const height = 1154;
+  const height = 800;
   const legendHeight = 50;
   const paddingTop = 60; // Padding for the legend
 
@@ -69,7 +69,10 @@ d3.csv("data.csv").then(data => {
   const legendX = (width - legendWidth) / 2;
   const legendY = 10;
 
-  const legend = svg.append("g")
+  const legend = d3.select("#legend").append("svg")
+    .attr("width", legendWidth)
+    .attr("height", legendHeight)
+    .append("g")
     .attr("transform", `translate(${legendX},${legendY})`);
 
   legend.append("rect")
@@ -133,6 +136,7 @@ d3.csv("data.csv").then(data => {
 
   // Append multiline text
   leaf.append("text")
+      .attr("class", "treemap-text")
       .attr("clip-path", d => d.clipUid)
     .selectAll("tspan")
     .data(d => [d.data.name, format(d.value)])
