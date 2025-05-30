@@ -9,18 +9,34 @@
 <body>
     <div id="container">
         <div id="header">
-            <h1>University Enrollment by Department</h1>
-            <p>Data Source: University Enrollment Data</p>
-            <p>This treemap visualizes student enrollment data by department, showing the distribution of students across various fields of study.</p>
-        </div>
-        <div id="chart-container">
-            <div id="chart"></div>
-            <div id="stats-container">
-                <div id="stats"></div>
-                <div id="legend-container"></div>
+        <h1>Вступники до вишів у 2024</h1>
+        <p><strong>Дані:</strong> <a href="https://docs.google.com/spreadsheets/d/11fjQeIEFLMiwwMU4XWRmVeuOZwVPB43R/edit?usp=sharing&ouid=111450090685449511101&rtpof=true&sd=true">Google Spreadsheet Link</a></p>
+        <p>Цей графік ілюструє розподіл вступників за кількістю та статтю по різних спеціяльностях.</p>
+    </div>
+        
+        <div id="main-content">
+            <div id="chart-section">
+                <div id="chart"></div>
+            </div>
+            
+            <div id="sidebar">
+                <div id="stats">
+                    <h3>Загальні дані</h3>
+                </div>
+                
+                <div id="legend-container">
+                    <h3>Ґендерний розподіл</h3>
+                </div>
+                
+                <div id="info-panel" style="display: none;">
+                    <h4>Обрана галузь знань</h4>
+                    <div id="category-info"></div>
+                    <button id="reset-button">Скинути</button>
+                </div>
             </div>
         </div>
     </div>
+    
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="script.js"></script>
 </body>

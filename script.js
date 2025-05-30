@@ -1,141 +1,204 @@
-// Load the data from the local CSV file
 d3.csv("data.csv").then(data => {
-  // Calculate total students
   const totalStudents = data.length;
-
-  // Calculate total departments
   const totalDepartments = new Set(data.map(d => d.Department)).size;
-
-  // Calculate total schools
   const totalSchools = new Set(data.map(d => d.UniID)).size;
+  const totalCategories = new Set(data.map(d => d.Category)).size;
 
-  // Display the information above the legend
-  const statsContainer = d3.select("#stats");
-  statsContainer.append("div").text(`Total Students: ${totalStudents}`);
-  statsContainer.append("div").text(`Total Departments: ${totalDepartments}`);
-  statsContainer.append("div").text(`Total Schools: ${totalSchools}`);
+  // statistics
+  const statsContainer = d3.select("#Загальні дані");
+  statsContainer.append("div").html(`<strong>Всього вступників:</strong> ${totalStudents}`);
+  statsContainer.append("div").html(`<strong>Всього спеціальностей:</strong> ${totalDepartments}`);
+  statsContainer.append("div").html(`<strong>Всього навчальних закладів:</strong> ${totalSchools}`);
+  statsContainer.append("div").html(`<strong>Всього галузей знань:</strong> ${totalCategories}`);
 
-  // Prepare the data for the treemap using d3.rollup
+  // prep data for the treemap using d3.rollup
   const rollupData = d3.rollup(
     data,
     v => {
       const maleCount = v.filter(d => d.Sex === 'Ч').length;
       const femaleCount = v.filter(d => d.Sex === 'Ж').length;
-      return { total: v.length, maleCount, femaleCount };
+      const category = v[0].Category;
+      return { total: v.length, maleCount, femaleCount, category };
     },
     d => d.Department
   );
 
-  // Convert the rollup data into a hierarchical format
+  // structuring our data and creating hierarchy
   const rootData = {
     name: "Departments",
     children: Array.from(rollupData, ([key, value]) => ({
       name: key,
       value: value.total,
       maleCount: value.maleCount,
-      femaleCount: value.femaleCount
+      femaleCount: value.femaleCount,
+      category: value.category
     }))
   };
 
-  // Create the hierarchy directly from the rollup data
   const root = d3.hierarchy(rootData)
     .sum(d => d.value)
     .sort((a, b) => b.value - a.value);
 
-  // Specify the color scale for sex balance
+  // color scale for sex
   const color = d3.scaleSequential(d3.interpolateRdYlBu)
-    .domain([0, 1]); // 0 for all male, 1 for all female
+    .domain([0, 1]);
+  // https://d3js.org/d3-scale-chromatic/sequential
 
-  // Specify the chart’s dimensions
+  // treemap dimension
   const width = document.getElementById('chart').clientWidth;
   const height = document.getElementById('chart').clientHeight;
 
-  // Compute the layout
   d3.treemap()
     .tile(d3.treemapSquarify)
     .size([width, height])
-    .padding(1)
+    .padding(2)
     .round(true)(root);
 
-  // Create the SVG container
   const svg = d3.select("#chart").append("svg")
     .attr("width", "100%")
     .attr("height", "100%")
     .attr("style", "font: 10px sans-serif;");
 
-  // Create a group for the treemap
+  // track selected category
+  let selectedCategory = null;
+
   const treemapGroup = svg.append("g");
 
-  // Add a cell for each leaf of the hierarchy
+  // cell for each leaf of the hierarchy
   const leaf = treemapGroup.selectAll("g")
     .data(root.leaves())
     .join("g")
-      .attr("transform", d => `translate(${d.x0},${d.y0})`);
+    .attr("class", "treemap-cell")
+    .attr("transform", d => `translate(${d.x0},${d.y0})`)
+    .on("click", function(event, d) {
+      handleCellClick(d);
+    });
 
-  // Append a tooltip
+  // tooltip
   const format = d3.format(",d");
   leaf.append("title")
-      .text(d => `${d.data.name}\nTotal: ${format(d.value)}\nMale: ${d.data.maleCount}\nFemale: ${d.data.femaleCount}`);
+      .text(d => `${d.data.name}\nCategory: ${d.data.category}\nTotal: ${format(d.value)}\nMale: ${d.data.maleCount}\nFemale: ${d.data.femaleCount}`);
 
-  // Append a color rectangle
+  // color rectangle
   leaf.append("rect")
       .attr("fill", d => {
         const maleRatio = d.data.maleCount / d.value;
         return color(maleRatio);
       })
-      .attr("fill-opacity", 0.6)
+      .attr("fill-opacity", 0.8)
       .attr("width", d => d.x1 - d.x0)
-      .attr("height", d => d.y1 - d.y0);
+      .attr("height", d => d.y1 - d.y0)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1);
 
-  // Define a minimum area threshold for displaying text
-  const minAreaThreshold = 2250; // Adjust this value as needed
+  // minimum area threshold for displaying text
+  const minAreaThreshold = 3500; // this hides the overflowing text in small cells so it doesn't look ugly
 
-  // Function to wrap text within a cell
-  function wrapText(textElement, width, text, x, y) {
-    const words = text.split(/\s+/).reverse();
-    let word;
-    let line = [];
-    let lineNumber = 0;
-    const lineHeight = 1.1; // ems
-    let tspan = textElement.append("tspan").attr("x", x).attr("y", y);
-
-    while (word = words.pop()) {
-      line.push(word);
-      tspan.text(line.join(" "));
-      if (tspan.node().getComputedTextLength() > width) {
-        line.pop();
-        tspan.text(line.join(" "));
-        line = [word];
-        tspan = textElement.append("tspan")
-          .attr("x", x)
-          .attr("y", y)
-          .attr("dy", `${++lineNumber * lineHeight}em`)
-          .text(word);
-      }
-    }
+  // calculate appropriate font size based on cell dimensions
+  function getFontSize(cellWidth, cellHeight) {
+    const minDimension = Math.min(cellWidth, cellHeight);
+    if (minDimension < 50) return 8;
+    if (minDimension < 80) return 9;
+    if (minDimension < 120) return 10;
+    return 11; 
   }
 
-  // Append text and handle overflow based on cell area
+  // get truncated text that fits in cell
+  function getTruncatedText(text, cellWidth, fontSize) {
+    // each character is about 0.6 * fontSize pixels wide
+    const charWidth = fontSize * 0.6;
+    const availableWidth = cellWidth - 8; // 4px padding on each side
+    const maxChars = Math.floor(availableWidth / charWidth);
+    
+    if (text.length <= maxChars) return text;
+    return text.substring(0, Math.max(1, maxChars - 3)) + "...";
+  }
+
   leaf.each(function(d) {
     const cellWidth = d.x1 - d.x0;
     const cellHeight = d.y1 - d.y0;
     const cellArea = cellWidth * cellHeight;
 
     if (cellArea > minAreaThreshold) {
-      const textGroup = d3.select(this).append("text")
-        .attr("class", "treemap-text")
-        .attr("x", 3)
-        .attr("y", 13);
+      const fontSize = getFontSize(cellWidth, cellHeight);
+      const truncatedName = getTruncatedText(d.data.name, cellWidth, fontSize);
 
-      wrapText(textGroup, cellWidth - 6, d.data.name, 3, 13);
+      // add department name
+      d3.select(this).append("text")
+        .attr("class", "treemap-text")
+        .attr("x", 4)
+        .attr("y", 14)
+        .style("font-size", fontSize + "px")
+        .text(truncatedName);
+
+      // stats
+      if (cellArea > 5000 && cellHeight > 35) {
+        d3.select(this).append("text")
+          .attr("class", "treemap-stats")
+          .attr("x", 4)
+          .attr("y", 26)
+          .style("font-size", Math.max(8, fontSize - 1) + "px")
+          .text(`Total: ${d.value}`);
+      }
+
+      // gender breakdown
+      if (cellArea > 7000 && cellHeight > 50) {
+        d3.select(this).append("text")
+          .attr("class", "treemap-stats")
+          .attr("x", 4)
+          .attr("y", 38)
+          .style("font-size", Math.max(8, fontSize - 1) + "px")
+          .text(`M: ${d.data.maleCount} F: ${d.data.femaleCount}`);
+      }
     }
   });
 
-  // Add a legend
+  // highlight on click
+  function handleCellClick(clickedData) {
+    const clickedCategory = clickedData.data.category;
+    
+    if (selectedCategory === clickedCategory) {
+      // find the same category
+      selectedCategory = null;
+      leaf.classed("highlighted", false)
+          .classed("dimmed", false);
+      d3.select("#info-panel").style("display", "none");
+    } else {
+      selectedCategory = clickedCategory;
+      
+      // highlight cells in the same category, dim others
+      leaf.classed("highlighted", d => d.data.category === selectedCategory)
+          .classed("dimmed", d => d.data.category !== selectedCategory);
+      
+      // info panel with category details
+      const categoryData = root.leaves().filter(d => d.data.category === selectedCategory);
+      const totalInCategory = categoryData.reduce((sum, d) => sum + d.value, 0);
+      const departmentsInCategory = categoryData.length;
+      
+      d3.select("#category-info")
+        .html(`<strong>${selectedCategory}</strong><br>
+               Departments: ${departmentsInCategory}<br>
+               Total Students: ${totalInCategory}`);
+      
+      d3.select("#info-panel").style("display", "block");
+    }
+  }
+
+  // reset button
+  d3.select("#reset-button").on("click", function() {
+    selectedCategory = null;
+    leaf.classed("highlighted", false)
+        .classed("dimmed", false);
+    d3.select("#info-panel").style("display", "none");
+  });
+
+  // legend
   const legendItems = [
-    { color: color(0), label: "All Male" },
-    { color: color(0.5), label: "Balanced" },
-    { color: color(1), label: "All Female" }
+    { color: color(0), label: "Переважно чоловіки" },
+    { color: color(0.25), label: "Більшість чоловіки" },
+    { color: color(0.5), label: "Збалансована спеціяльність" },
+    { color: color(0.75), label: "Більшість жінки" },
+    { color: color(1), label: "Переважно жінки" }
   ];
 
   const legendContainer = d3.select("#legend-container");
@@ -152,24 +215,61 @@ d3.csv("data.csv").then(data => {
       .text(item.label);
   });
 
-  // Make the treemap responsive
+  // listener
   window.addEventListener('resize', function() {
-    const width = document.getElementById('chart').clientWidth;
-    const height = document.getElementById('chart').clientHeight;
+    const newWidth = document.getElementById('chart').clientWidth;
+    const newHeight = document.getElementById('chart').clientHeight;
 
     d3.treemap()
-      .size([width, height])
-      .padding(1)
+      .tile(d3.treemapSquarify)
+      .size([newWidth, newHeight])
+      .padding(2)
       .round(true)(root);
 
-    svg.attr("width", width).attr("height", height);
-
-    treemapGroup.selectAll("g")
-      .attr("transform", d => `translate(${d.x0},${d.y0})`);
-
-    treemapGroup.selectAll("rect")
+    leaf.attr("transform", d => `translate(${d.x0},${d.y0})`);
+    
+    leaf.select("rect")
       .attr("width", d => d.x1 - d.x0)
       .attr("height", d => d.y1 - d.y0);
+
+    // update text based on new cell sizes and area threshold
+    leaf.selectAll("text").remove();
+    
+    leaf.each(function(d) {
+      const cellWidth = d.x1 - d.x0;
+      const cellHeight = d.y1 - d.y0;
+      const cellArea = cellWidth * cellHeight;
+
+      if (cellArea > minAreaThreshold) {
+        const fontSize = getFontSize(cellWidth, cellHeight);
+        const truncatedName = getTruncatedText(d.data.name, cellWidth, fontSize);
+
+        d3.select(this).append("text")
+          .attr("class", "treemap-text")
+          .attr("x", 4)
+          .attr("y", 14)
+          .style("font-size", fontSize + "px")
+          .text(truncatedName);
+
+        if (cellArea > 5000 && cellHeight > 35) {
+          d3.select(this).append("text")
+            .attr("class", "treemap-stats")
+            .attr("x", 4)
+            .attr("y", 26)
+            .style("font-size", Math.max(8, fontSize - 1) + "px")
+            .text(`Total: ${d.value}`);
+        }
+
+        if (cellArea > 7000 && cellHeight > 50) {
+          d3.select(this).append("text")
+            .attr("class", "treemap-stats")
+            .attr("x", 4)
+            .attr("y", 38)
+            .style("font-size", Math.max(8, fontSize - 1) + "px")
+            .text(`M: ${d.data.maleCount} F: ${d.data.femaleCount}`);
+        }
+      }
+    });
   });
 
 }).catch(error => {
