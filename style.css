@@ -6,43 +6,64 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
     background-color: #323131;
+    color: white;
 }
 
 #container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 90%;
+    width: 95%;
     max-width: 1200px;
 }
 
-#legend-container {
-    margin-bottom: 20px;
-    width: 100%;
+#header {
     text-align: center;
+    margin-bottom: 20px;
 }
 
-#legend {
-    display: inline-block;
-    margin: 0 auto;
+#chart-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 80vh;
 }
 
 #chart {
-    width: 100%;
-    height: 80vh;
+    flex: 1;
+    height: 100%;
     overflow: hidden;
 }
 
-.legend-item {
-    display: inline-block;
-    margin: 0 10px;
+#stats-container {
+    width: 150px;
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
 }
 
-.legend-label {
-    display: block;
-    margin-top: 5px;
+#stats {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#legend-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
 }
 
 .treemap-text {

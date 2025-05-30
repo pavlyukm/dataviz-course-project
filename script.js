@@ -1,8 +1,21 @@
 // Load the data from the local CSV file
 d3.csv("data.csv").then(data => {
-  console.log("Data loaded:", data);
+  // Calculate total students
+  const totalStudents = data.length;
 
-  // Prepare the data for the tree map using d3.rollup
+  // Calculate total departments
+  const totalDepartments = new Set(data.map(d => d.Department)).size;
+
+  // Calculate total schools
+  const totalSchools = new Set(data.map(d => d.UniID)).size;
+
+  // Display the information above the legend
+  const statsContainer = d3.select("#stats");
+  statsContainer.append("div").text(`Total Students: ${totalStudents}`);
+  statsContainer.append("div").text(`Total Departments: ${totalDepartments}`);
+  statsContainer.append("div").text(`Total Schools: ${totalSchools}`);
+
+  // Prepare the data for the treemap using d3.rollup
   const rollupData = d3.rollup(
     data,
     v => {
@@ -12,8 +25,6 @@ d3.csv("data.csv").then(data => {
     },
     d => d.Department
   );
-
-  console.log("Rollup data:", rollupData);
 
   // Convert the rollup data into a hierarchical format
   const rootData = {
@@ -26,92 +37,34 @@ d3.csv("data.csv").then(data => {
     }))
   };
 
-  console.log("Root data:", rootData);
-
   // Create the hierarchy directly from the rollup data
   const root = d3.hierarchy(rootData)
     .sum(d => d.value)
     .sort((a, b) => b.value - a.value);
 
-  console.log("Hierarchy root:", root);
-
-  // Specify the chart’s dimensions
-  const width = 1154;
-  const height = 800;
-  const legendHeight = 50;
-  const paddingTop = 60; // Padding for the legend
-
   // Specify the color scale for sex balance
   const color = d3.scaleSequential(d3.interpolateRdYlBu)
     .domain([0, 1]); // 0 for all male, 1 for all female
 
+  // Specify the chart’s dimensions
+  const width = document.getElementById('chart').clientWidth;
+  const height = document.getElementById('chart').clientHeight;
+
   // Compute the layout
   d3.treemap()
     .tile(d3.treemapSquarify)
-    .size([width, height - legendHeight - paddingTop])
+    .size([width, height])
     .padding(1)
     .round(true)(root);
 
   // Create the SVG container
   const svg = d3.select("#chart").append("svg")
-      .attr("viewBox", [0, 0, width, height])
-      .attr("width", width)
-      .attr("height", height)
-      .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
-
-  if (svg.empty()) {
-    console.error("SVG element not found or not appended correctly.");
-    return;
-  }
-
-  // Add a legend
-  const legendWidth = 200;
-  const legendX = (width - legendWidth) / 2;
-  const legendY = 10;
-
-  const legend = d3.select("#legend")
-    .attr("width", legendWidth)
-    .attr("height", legendHeight)
-    .append("g")
-    .attr("transform", `translate(${legendX},${legendY})`);
-
-  legend.append("rect")
-    .attr("width", legendWidth)
-    .attr("height", legendHeight)
-    .attr("fill", "white")
-    .attr("stroke", "black");
-
-  // Add minimalistic legend items
-  const legendItems = [
-    { color: color(0), label: "All Male" },
-    { color: color(0.5), label: "Balanced" },
-    { color: color(1), label: "All Female" }
-  ];
-
-  legend.selectAll("rect.legend-item")
-    .data(legendItems)
-    .enter()
-    .append("rect")
-    .attr("class", "legend-item")
-    .attr("x", (d, i) => i * (legendWidth / 3))
-    .attr("y", 20)
-    .attr("width", legendWidth / 3)
-    .attr("height", 20)
-    .attr("fill", d => d.color);
-
-  legend.selectAll("text.legend-label")
-    .data(legendItems)
-    .enter()
-    .append("text")
-    .attr("class", "legend-label")
-    .attr("x", (d, i) => i * (legendWidth / 3) + (legendWidth / 6))
-    .attr("y", 50)
-    .attr("text-anchor", "middle")
-    .text(d => d.label);
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("style", "font: 10px sans-serif;");
 
   // Create a group for the treemap
-  const treemapGroup = svg.append("g")
-    .attr("transform", `translate(0,${legendHeight + paddingTop})`);
+  const treemapGroup = svg.append("g");
 
   // Add a cell for each leaf of the hierarchy
   const leaf = treemapGroup.selectAll("g")
@@ -134,27 +87,90 @@ d3.csv("data.csv").then(data => {
       .attr("width", d => d.x1 - d.x0)
       .attr("height", d => d.y1 - d.y0);
 
-  // Append multiline text
-  leaf.append("text")
-      .attr("class", "treemap-text")
-      .attr("clip-path", d => d.clipUid)
-    .selectAll("tspan")
-    .data(d => [d.data.name, format(d.value)])
-    .join("tspan")
-      .attr("x", 3)
-      .attr("y", (d, i) => `${i * 0.9 + 1.1}em`)
-      .text(d => d);
+  // Define a minimum area threshold for displaying text
+  const minAreaThreshold = 2250; // Adjust this value as needed
 
-  // Make the treemap zoomable without panning
-  const zoom = d3.zoom()
-    .scaleExtent([1, 8])
-    .translateExtent([[0, 0], [width, height]])
-    .on("zoom", (event) => {
-      treemapGroup.attr("transform", event.transform);
-    });
+  // Function to wrap text within a cell
+  function wrapText(textElement, width, text, x, y) {
+    const words = text.split(/\s+/).reverse();
+    let word;
+    let line = [];
+    let lineNumber = 0;
+    const lineHeight = 1.1; // ems
+    let tspan = textElement.append("tspan").attr("x", x).attr("y", y);
 
-  svg.call(zoom)
-    .on("dblclick.zoom", null); // Disable double-click zoom to reset
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = textElement.append("tspan")
+          .attr("x", x)
+          .attr("y", y)
+          .attr("dy", `${++lineNumber * lineHeight}em`)
+          .text(word);
+      }
+    }
+  }
+
+  // Append text and handle overflow based on cell area
+  leaf.each(function(d) {
+    const cellWidth = d.x1 - d.x0;
+    const cellHeight = d.y1 - d.y0;
+    const cellArea = cellWidth * cellHeight;
+
+    if (cellArea > minAreaThreshold) {
+      const textGroup = d3.select(this).append("text")
+        .attr("class", "treemap-text")
+        .attr("x", 3)
+        .attr("y", 13);
+
+      wrapText(textGroup, cellWidth - 6, d.data.name, 3, 13);
+    }
+  });
+
+  // Add a legend
+  const legendItems = [
+    { color: color(0), label: "All Male" },
+    { color: color(0.5), label: "Balanced" },
+    { color: color(1), label: "All Female" }
+  ];
+
+  const legendContainer = d3.select("#legend-container");
+
+  legendItems.forEach(item => {
+    const legendItem = legendContainer.append("div")
+      .attr("class", "legend-item");
+
+    legendItem.append("div")
+      .attr("class", "legend-color")
+      .style("background-color", item.color);
+
+    legendItem.append("div")
+      .text(item.label);
+  });
+
+  // Make the treemap responsive
+  window.addEventListener('resize', function() {
+    const width = document.getElementById('chart').clientWidth;
+    const height = document.getElementById('chart').clientHeight;
+
+    d3.treemap()
+      .size([width, height])
+      .padding(1)
+      .round(true)(root);
+
+    svg.attr("width", width).attr("height", height);
+
+    treemapGroup.selectAll("g")
+      .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+    treemapGroup.selectAll("rect")
+      .attr("width", d => d.x1 - d.x0)
+      .attr("height", d => d.y1 - d.y0);
+  });
 
 }).catch(error => {
   console.error("Error loading data:", error);
