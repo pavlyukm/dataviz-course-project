@@ -5,9 +5,9 @@ d3.csv("data.csv").then(data => {
   const totalCategories = new Set(data.map(d => d.Category)).size;
 
   // statistics
-  const statsContainer = d3.select("#Загальні дані");
+  const statsContainer = d3.select("#stats");
   statsContainer.append("div").html(`<strong>Всього вступників:</strong> ${totalStudents}`);
-  statsContainer.append("div").html(`<strong>Всього спеціальностей:</strong> ${totalDepartments}`);
+  statsContainer.append("div").html(`<strong>Всього спеціяльностей:</strong> ${totalDepartments}`);
   statsContainer.append("div").html(`<strong>Всього навчальних закладів:</strong> ${totalSchools}`);
   statsContainer.append("div").html(`<strong>Всього галузей знань:</strong> ${totalCategories}`);
 
@@ -40,7 +40,8 @@ d3.csv("data.csv").then(data => {
     .sort((a, b) => b.value - a.value);
 
   // color scale for sex
-  const color = d3.scaleSequential(d3.interpolateRdYlBu)
+  const customInterpolator = d3.interpolate("#690B22", "#F1E3D3"); // https://colorhunt.co/
+  const color = d3.scaleSequential(customInterpolator)
     .domain([0, 1]);
   // https://d3js.org/d3-scale-chromatic/sequential
 
@@ -92,7 +93,7 @@ d3.csv("data.csv").then(data => {
       .attr("stroke-width", 1);
 
   // minimum area threshold for displaying text
-  const minAreaThreshold = 3500; // this hides the overflowing text in small cells so it doesn't look ugly
+  const minAreaThreshold = 1500; // this hides the overflowing text in small cells so it doesn't look ugly
 
   // calculate appropriate font size based on cell dimensions
   function getFontSize(cellWidth, cellHeight) {
@@ -177,8 +178,8 @@ d3.csv("data.csv").then(data => {
       
       d3.select("#category-info")
         .html(`<strong>${selectedCategory}</strong><br>
-               Departments: ${departmentsInCategory}<br>
-               Total Students: ${totalInCategory}`);
+               Спеціяльності: ${departmentsInCategory}<br>
+               Вступники: ${totalInCategory}`);
       
       d3.select("#info-panel").style("display", "block");
     }
@@ -194,11 +195,11 @@ d3.csv("data.csv").then(data => {
 
   // legend
   const legendItems = [
-    { color: color(0), label: "Переважно чоловіки" },
-    { color: color(0.25), label: "Більшість чоловіки" },
+    { color: color(0), label: "Переважно жінки" },
+    { color: color(0.25), label: "Більшість жінки" },
     { color: color(0.5), label: "Збалансована спеціяльність" },
-    { color: color(0.75), label: "Більшість жінки" },
-    { color: color(1), label: "Переважно жінки" }
+    { color: color(0.75), label: "Більшість чоловіки" },
+    { color: color(1), label: "Переважно чоловіки" }
   ];
 
   const legendContainer = d3.select("#legend-container");
