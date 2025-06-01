@@ -3,14 +3,20 @@ d3.csv("data.csv").then(data => {
   const totalDepartments = new Set(data.map(d => d.Department)).size;
   const totalSchools = new Set(data.map(d => d.UniID)).size;
   const totalCategories = new Set(data.map(d => d.Category)).size;
+  const totalMen = data.filter(d => d.Sex === 'Ч').length;
+  const totalWomen = data.filter(d => d.Sex === 'Ж').length;
+  const menPercentage = (totalMen / totalStudents) * 100;
+  const womenPercentage = (totalWomen / totalStudents) * 100;
 
   // statistics
   const statsContainer = d3.select("#stats");
   statsContainer.append("div").html(`<strong>Всього вступників:</strong> ${totalStudents}`);
-  statsContainer.append("div").html(`<strong>Всього спеціяльностей:</strong> ${totalDepartments}`);
+  statsContainer.append("div").html(`<strong>Всього спеціальностей:</strong> ${totalDepartments}`);
   statsContainer.append("div").html(`<strong>Всього навчальних закладів:</strong> ${totalSchools}`);
   statsContainer.append("div").html(`<strong>Всього галузей знань:</strong> ${totalCategories}`);
-
+  statsContainer.append("div").html(`<strong>Чоловіки:</strong> ${totalMen} (${menPercentage.toFixed(2)}%)`);
+  statsContainer.append("div").html(`<strong>Жінки:</strong> ${totalWomen} (${womenPercentage.toFixed(2)}%)`);
+  
   // prep data for the treemap using d3.rollup
   const rollupData = d3.rollup(
     data,
@@ -175,11 +181,18 @@ d3.csv("data.csv").then(data => {
       const categoryData = root.leaves().filter(d => d.data.category === selectedCategory);
       const totalInCategory = categoryData.reduce((sum, d) => sum + d.value, 0);
       const departmentsInCategory = categoryData.length;
+      const menInCategory = categoryData.reduce((sum, d) => sum + d.data.maleCount, 0);
+      const womenInCategory = categoryData.reduce((sum, d) => sum + d.data.femaleCount, 0);
+      const menPercentageInCategory = (menInCategory / totalInCategory) * 100;
+      const womenPercentageInCategory = (womenInCategory / totalInCategory) * 100;
+
       
       d3.select("#category-info")
         .html(`<strong>${selectedCategory}</strong><br>
                Спеціяльності: ${departmentsInCategory}<br>
-               Вступники: ${totalInCategory}`);
+               Вступники: ${totalInCategory}
+               Чоловіки: ${menInCategory} (${menPercentageInCategory.toFixed(2)}%)<br>
+               Жінки: ${womenInCategory} (${womenPercentageInCategory.toFixed(2)}%)`);
       
       d3.select("#info-panel").style("display", "block");
     }
