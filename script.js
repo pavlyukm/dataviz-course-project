@@ -16,7 +16,7 @@ d3.csv("data.csv").then(data => {
   statsContainer.append("div").html(`<strong>Всього галузей знань:</strong> ${totalCategories}`);
   statsContainer.append("div").html(`<strong>Чоловіки:</strong> ${totalMen} (${menPercentage.toFixed(2)}%)`);
   statsContainer.append("div").html(`<strong>Жінки:</strong> ${totalWomen} (${womenPercentage.toFixed(2)}%)`);
-  
+
   // prep data for the treemap using d3.rollup
   const rollupData = d3.rollup(
     data,
@@ -271,7 +271,7 @@ d3.csv("data.csv").then(data => {
             .attr("x", 4)
             .attr("y", 26)
             .style("font-size", Math.max(8, fontSize - 1) + "px")
-            .text(`Total: ${d.value}`);
+            .text(`Загалом: ${d.value}`);
         }
 
         if (cellArea > 7000 && cellHeight > 50) {
@@ -280,7 +280,7 @@ d3.csv("data.csv").then(data => {
             .attr("x", 4)
             .attr("y", 38)
             .style("font-size", Math.max(8, fontSize - 1) + "px")
-            .text(`M: ${d.data.maleCount} F: ${d.data.femaleCount}`);
+            .text(`Ч: ${d.data.maleCount} Ж: ${d.data.femaleCount}`);
         }
       }
     });
