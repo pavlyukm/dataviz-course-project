@@ -84,7 +84,7 @@ d3.csv("data.csv").then(data => {
   // tooltip
   const format = d3.format(",d");
   leaf.append("title")
-      .text(d => `${d.data.name}\nCategory: ${d.data.category}\nTotal: ${format(d.value)}\nMale: ${d.data.maleCount}\nFemale: ${d.data.femaleCount}`);
+      .text(d => `${d.data.name}\nГалузь: ${d.data.category}\nЗагалом: ${format(d.value)}\nЧоловіки: ${d.data.maleCount}\nЖінки: ${d.data.femaleCount}`);
 
   // color rectangle
   leaf.append("rect")
