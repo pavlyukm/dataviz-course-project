@@ -46,9 +46,12 @@ d3.csv("data.csv").then(data => {
     .sort((a, b) => b.value - a.value);
 
   // color scale for sex
-  const customInterpolator = d3.interpolate("#690B22", "#F1E3D3"); // https://colorhunt.co/
-  const color = d3.scaleSequential(customInterpolator)
-    .domain([0, 1]);
+  const color = d3.piecewise(d3.interpolateRgb, [
+  "#E8B4CB",
+  "#F5F5DC",
+  "#B4D4E8" // https://colorhunt.co/ 
+  ]);
+
   // https://d3js.org/d3-scale-chromatic/sequential
 
   // treemap dimension
@@ -190,7 +193,7 @@ d3.csv("data.csv").then(data => {
       d3.select("#category-info")
         .html(`<strong>${selectedCategory}</strong><br>
                Спеціяльності: ${departmentsInCategory}<br>
-               Вступники: ${totalInCategory}
+               Вступники: ${totalInCategory}<br>
                Чоловіки: ${menInCategory} (${menPercentageInCategory.toFixed(2)}%)<br>
                Жінки: ${womenInCategory} (${womenPercentageInCategory.toFixed(2)}%)`);
       
